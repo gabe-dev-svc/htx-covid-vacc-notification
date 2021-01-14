@@ -5,7 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 import logging
 
-logging.basicConfig(filename='exec.log', encoding='utf-8', level=logging.INFO)
+logging.basicConfig(filename='exec.log', level=logging.INFO)
 
 SENDER = "Gabe Gutierrez <gegr93@gmail.com>"
 RECIPIENTS = ["gegr93@gmail.com", "megwillett@comcast.net"]
