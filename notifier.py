@@ -16,6 +16,37 @@ AWS_REGION = "us-east-1"
 SUBJECT = "COVID-19 Vaccine Seems to be Available on Vacstrac"
 client = boto3.client('ses', region_name=AWS_REGION)
 
+def alert_exception(payload):
+    BODY_TEXT = "The COVID notification application is failing: " + payload
+    try:
+        logger.info('Attempting to send e-mail')
+        response = client.send_email(
+            Destination={'ToAddresses': ['gegr93@gmail.com']},
+            Message={
+                'Body': {
+                    'Text': {
+                        'Charset': 'UTF-8',
+                        'Data': BODY_TEXT
+                    },
+                    'Html': {
+                        'Charset': 'UTF-8',
+                        'Data': BODY_TEXT
+                    }
+                },
+                    'Subject': {
+                        'Charset': 'UTF-8',
+                        'Data': 'COVID Notification Application failing'
+                    }
+                },
+            Source=SENDER
+        )
+        logger.info("Sent allert successfully")
+    except ClientError as e:
+        logger.error("Error encountered sending e-mail")
+        logger.error(e.response)
+    
+
+
 def send_email(payload):
     BODY_TEXT = "It's suspected that Harris County Public Health has vaccines available.\n" \
         "The received payload is as follows: " + str(payload) + "\n" \
@@ -42,7 +73,7 @@ def send_email(payload):
                 },
             Source=SENDER
         )
-        
+        logger.info("Sent notification successfully")
     except ClientError as e:
         logger.error("Error encountered sending e-mail")
         logger.error(e.response)
@@ -70,5 +101,11 @@ while True:
     except Exception as e:
         sleep_time = 120
         logger.error(e)
+        payload = str(e)
+        try:
+            alert_exception(payload)
+        except Exception as ex:
+            logger.error("Failed to send alert: " + str(ex))
+        
     logger.info('Sleeping %s seconds' % str(sleep_time))
     time.sleep(sleep_time)
