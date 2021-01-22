@@ -4,11 +4,14 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 import logging
+import sys
+import random
 
-logging.basicConfig(filename='exec.log', level=logging.INFO)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
 
 SENDER = "Gabe Gutierrez <gegr93@gmail.com>"
-RECIPIENTS = ["gegr93@gmail.com", "megwillett@comcast.net"]
+RECIPIENTS = ["gegr93@gmail.com", "ryan.gonzalez064@gmail.com"]
 AWS_REGION = "us-east-1"
 SUBJECT = "COVID-19 Vaccine Seems to be Available on Vacstrac"
 client = boto3.client('ses', region_name=AWS_REGION)
@@ -18,7 +21,7 @@ def send_email(payload):
         "The received payload is as follows: " + str(payload) + "\n" \
         "Visit https://vacstrac.hctx.net to confirm.\n"
     try:
-        logging.info('Attempting to send e-mail')
+        logger.info('Attempting to send e-mail')
         response = client.send_email(
             Destination={'ToAddresses': RECIPIENTS},
             Message={
@@ -39,25 +42,33 @@ def send_email(payload):
                 },
             Source=SENDER
         )
-        logging.info("Response: " + str(response))
+        
     except ClientError as e:
-        logging.error(e.response)
+        logger.error("Error encountered sending e-mail")
+        logger.error(e.response)
+    
 
 def check_status():
-    logging.info("Checking status")
     http = urllib3.PoolManager()
     r = http.request('GET', 'https://secureapp.hcphtx.org/vaxwebapi/api/PatientVaccine/checkifregistrationisavailable')
     data = r.data.decode('UTF-8')
     payload = json.loads(data)
-    logging.info("Response: " + str(payload))
     if payload['IsSuccess']:
-        logging.info('Success')
+        logger.info('Success!')
         send_email(payload)
+        return random.randint(300,400)
+    else:
+        logger.info('No luck')
+        return random.randint(60,180)
 
 
 
 while True:
-    logging.info('Running')
-    check_status()
-    logging.info('Sleeping')
-    time.sleep(60)
+    logger.info('Starting service')
+    try:
+        sleep_time = check_status()
+    except Exception as e:
+        sleep_time = 120
+        logger.error(e)
+    logger.info('Sleeping %s seconds' % str(sleep_time))
+    time.sleep(sleep_time)
